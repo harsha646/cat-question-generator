@@ -6,6 +6,10 @@ app = Flask(__name__)
 def home():
     return "CAT Question Generator API is running!"
 
+import os
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))  # Use Render's dynamic port or default to 10000
+    app.run(host="0.0.0.0", port=port)
+
 
