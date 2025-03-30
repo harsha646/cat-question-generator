@@ -1,24 +1,31 @@
 from flask import Flask, request, jsonify
-from transformers import pipeline
+from transformers import T5ForConditionalGeneration, T5Tokenizer
 
 app = Flask(__name__)
 
-# Load the T5-based model for question generation
-question_generator = pipeline("text2text-generation", model="ramsrigouthamg/t5_squad_v1")
+# Load the T5 model and tokenizer
+model_name = "google/t5-small"
+tokenizer = T5Tokenizer.from_pretrained(model_name)
+model = T5ForConditionalGeneration.from_pretrained(model_name)
 
-@app.route("/generate-question", methods=["POST"])
+@app.route('/generate-question', methods=['POST'])
 def generate_question():
-    data = request.json
-    topic = data.get("topic", "")
+    data = request.get_json()
+    topic = data.get("topic", "Data Interpretation")
     
-    if not topic:
-        return jsonify({"error": "Please provide a topic."}), 400
-    
-    prompt = f"Generate a CAT-level question based on the topic: {topic}"
-    
-    generated_question = question_generator(prompt, max_length=100, num_return_sequences=1)[0]['generated_text']
-    
-    return jsonify({"topic": topic, "question": generated_question})
+    # Convert input to a prompt
+    prompt = f"Generate a CAT exam question on {topic}"
 
-if __name__ == "__main__":
+    # Encode input
+    input_ids = tokenizer.encode(prompt, return_tensors="pt")
+
+    # Generate response
+    output = model.generate(input_ids, max_length=100, num_return_sequences=1)
+
+    # Decode output
+    question = tokenizer.decode(output[0], skip_special_tokens=True)
+
+    return jsonify({"question": question})
+
+if __name__ == '__main__':
     app.run(debug=True)
